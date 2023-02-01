@@ -7,7 +7,7 @@ use Cake\Http\Client;
 use CURLFile;
 use http\Url;
 use HTTP_Request2;
-
+//permitr uso de SSL não verificavel
 class WebhookComponent extends Component
 {
     public function message($servidor,$api,$instancia,$content,$numero,$operador){
