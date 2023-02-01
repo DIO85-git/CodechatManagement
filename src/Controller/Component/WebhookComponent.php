@@ -16,11 +16,14 @@ class WebhookComponent extends Component
         $curl = curl_init();
 
         $msg = json_encode(array('number' => $numero, 'options' => array('delay' => 2200), 'textMessage' => array('text' => '*'.$operador."*:\n".$content) ),JSON_UNESCAPED_SLASHES);
+
+
         curl_setopt_array($curl, array(
             CURLOPT_URL => $servidor.'/message/sendText/'.$instancia,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
@@ -57,6 +60,7 @@ public function mediamessage($servidor,$api,$instancia,$mediaURL,$content,$tipoM
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
+        CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_TIMEOUT => 0,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
@@ -107,6 +111,7 @@ function _thisUrl(){
             CURLOPT_URL => $url.'/chat/getBase64FromMediaMessage/' . $instancia,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_MAXREDIRS => 10,
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
@@ -164,51 +169,77 @@ function _thisUrl(){
 
 
 
-public function sendMedia($account,$idconversa,$message,$api,$apiServidor,$codechatURL,$instancia){
+public function sendMedia($account,$idconversa,$message,$api,$apiServidor,$codechatURL,$instancia, $participante = null){
 
 
 
+        if ($participante){
+            $caption = '***'.$participante.'*** enviou esta mídia: ';
+        }else{
+            $caption = null;
+          //  $participante = null;
+        }
     //    $media = $this->_downloadmedia($codechatURL,$instancia,$message['data']['key']['id'],$apiServidor);
          $media = $message['data']['key']['id'];
          $dados = base64_encode("$apiServidor&&$codechatURL&&$instancia&&$media");
 
          $urlmidia = $this->_thisUrl().'/webhook/chatwoot/download/'.$dados;
 
-         $caption = false;
         $mesagemtipo = $message['data']['message'];
          if (array_key_exists('imageMessage', $mesagemtipo)){
              $tipo = 'image';
              $mimetype = $message['data']['message']['imageMessage']['mimetype'];
+
              if (array_key_exists('caption',$message['data']['message']['imageMessage'])){
-                 $caption = $message['data']['message']['imageMessage']['caption'];
+                 if ($participante){
+                      $caption = '***'.$participante.'*** enviou esta mídia👉: '.$message['data']['message']['imageMessage']['caption'];
+                 }else{
+                     $caption = $message['data']['message']['imageMessage']['caption'];
+                 }
              }
          }
     if (array_key_exists('videoMessage', $mesagemtipo)){
         $tipo = 'video';
         $mimetype = $message['data']['message']['videoMessage']['mimetype'];
         if (array_key_exists('caption',$message['data']['message']['videoMessage'])){
-            $caption = $message['data']['message']['videoMessage']['caption'];
+            if ($participante){
+                $caption = '***'.$participante.'*** enviou esta mídia👉: '.$message['data']['message']['videoMessage']['caption'];
+            }else{
+                $caption = $message['data']['message']['videoMessage']['caption'];
+            }
         }
     }
     if (array_key_exists('documentMessage', $mesagemtipo)){
         $tipo = 'file';
         $mimetype = $message['data']['message']['documentMessage']['mimetype'];
         if (array_key_exists('caption',$message['data']['message']['documentMessage'])){
-            $caption = $message['data']['message']['documentMessage']['caption'];
+            if ($participante){
+                $caption = '***'.$participante.'*** enviou esta mídia👉: '.$message['data']['message']['documentMessage']['caption'];
+            }else{
+                $caption = $message['data']['message']['documentMessage']['caption'];
+            }
         }
     }
     if (array_key_exists('audioMessage', $mesagemtipo)){
         $tipo = 'audio';
         $mimetype = $message['data']['message']['audioMessage']['mimetype'];
         if (array_key_exists('caption',$message['data']['message']['audioMessage'])){
-            $caption = $message['data']['message']['audioMessage']['caption'];
+            if ($participante){
+                $caption = '***'.$participante.'*** enviou esta mídia👉: '.$message['data']['message']['audioMessage']['caption'];
+            }else{
+                $caption = $message['data']['message']['audioMessage']['caption'];
+            }
         }
     }
     if (array_key_exists('stickerMessage', $mesagemtipo)){
-        $tipo = 'audio';
+        $tipo = 'image';
         $mimetype = $message['data']['message']['stickerMessage']['mimetype'];
         if (array_key_exists('caption',$message['data']['message']['stickerMessage'])){
-            $caption = $message['data']['message']['stickerMessage']['caption'];
+            if ($participante){
+                $caption = '***'.$participante.'*** enviou esta mídia👉: '.$message['data']['message']['stickerMessage']['caption'];
+            }else{
+                $caption = $message['data']['message']['stickerMessage']['caption'];
+            }
         }
     }
 
@@ -220,6 +251,7 @@ public function sendMedia($account,$idconversa,$message,$api,$apiServidor,$codec
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
+        CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_TIMEOUT => 0,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
@@ -234,15 +266,8 @@ public function sendMedia($account,$idconversa,$message,$api,$apiServidor,$codec
     $response = curl_exec($curl);
 
     curl_close($curl);
-  //  return $response;
-
-
-
-
-
+    return $response;
 }
-
-
 
     public function searchconv($api,$inbox,$account){
 
@@ -256,6 +281,13 @@ public function sendMedia($account,$idconversa,$message,$api,$apiServidor,$codec
 
 public function sendText($api,$account,$IDConversa,$mensagem, $fromMe = false){
 
+        if ($fromMe){
+            $jsonEnvio = array('content' => $mensagem, 'message_type' => 'outgoing', 'private' => true);
+            $jsonEnvio = json_encode($jsonEnvio);
+        }else{
+            $jsonEnvio = array('content' => $mensagem, 'message_type' => 'incoming');
+            $jsonEnvio = json_encode($jsonEnvio);
+        }
 
     $curl = curl_init();
 
@@ -265,13 +297,11 @@ public function sendText($api,$account,$IDConversa,$mensagem, $fromMe = false){
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
         CURLOPT_TIMEOUT => 0,
+        CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS =>'{
-	"content":"'.$mensagem.'",
-	"message_type": "incoming"
-}',
+        CURLOPT_POSTFIELDS =>$jsonEnvio,
         CURLOPT_HTTPHEADER => array(
             'Content-Type: application/json',
             'api_access_token: '.$api
@@ -286,7 +316,7 @@ public function sendText($api,$account,$IDConversa,$mensagem, $fromMe = false){
     }
 
 
-public function checkContact($conta,$numero,$api){
+public function checkContact($conta,$contato,$api){
 
 
     $http = new Client([
@@ -294,7 +324,7 @@ public function checkContact($conta,$numero,$api){
     ]);
     $response = $http->get(
         $this->_urlchatwoot().'/api/v1/accounts/'.$conta.'/contacts/search',
-        ['q' => $numero],
+        ['q' => $contato],
         ['type' => 'json']
     );
 
@@ -316,16 +346,44 @@ function _photoProfile($api,$number,$url,$instance){
     return $response->getJson();
 
 }
+
+public function createGroupContact($api, $url, $email,$instance,$conta,$apichat){
+
+    $http = new Client([
+        'headers' => ['apikey' => $api]
+    ]);
+    $response = $http->get(
+        $url.'/group/findGroupInfos/'.$instance.'?groupJid='.$email
+    );
+    $retorno = $response->getJson();
+    $nome = 'Grupo: '.$retorno['subject'];
+    $groupJson = array('name' => $nome, 'email' => $email);
+    $http = new Client([
+        'headers' => ['api_access_token' => $apichat]
+    ]);
+
+    $response = $http->post(
+        $this->_urlchatwoot().'/api/v1/accounts/'.$conta.'/contacts',
+        json_encode($groupJson),
+        ['type' => 'json']
+    );
+
+    if ($response->isOk()){
+        return $response->getJson();
+    }else{
+        return null;
+    }
+
+
+}
+
 public function createContact($conta,$numero,$api, $nome,$api_serverZAP,$urlZap,$instance){
+
 
         $photo = $this->_photoProfile($api_serverZAP,$numero,$urlZap,$instance);
         $avatar = $photo['profilePictureUrl'];
         $novoContatoJson = '{"name": "'.$nome.'","phone_number": "'.$numero.'","avatar_url": "'.$avatar.'"}';
-
         $array = array('name' => $nome, 'phone_number' => $numero, 'avatar_url' => $avatar);
-
-
-
 
     $http = new Client([
         'headers' => ['api_access_token' => $api]

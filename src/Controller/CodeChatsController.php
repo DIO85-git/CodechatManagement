@@ -100,6 +100,10 @@ class CodeChatsController extends AppController
         if ($this->request->is('post')) {
             $codeChat = $this->CodeChats->patchEntity($codeChat, $this->request->getData());
             $server_id = $this->request->getData()['server_id'];
+            $dados = $this->request->getData();
+            if (!array_key_exists('user_id',$this->request->getData())){
+                $codeChat->user_id = $this->request->getAttribute('identity')->id;
+            }
             $servidor = TableRegistry::getTableLocator()->get('Servers')->find('all')->where(['id' => $server_id])->first();
             $servidor_url = $servidor->url;
             $servidor_api = $servidor->api_geral;
@@ -217,7 +221,7 @@ class CodeChatsController extends AppController
 
                     }
              $this->Flash->error(__('The code chat could not be deleted. Please, try again.'));
-             return $this->redirect(['action' => 'view'.$dados['idCodechat']]);
+             return $this->redirect(['action' => 'view/'.$dados['idCodechat']]);
          }
 
     }
