@@ -92,7 +92,7 @@ class ApisController extends AppController
                     if (array_key_exists('quotedMessage',$arrayJson['extendedTextMessage']['contextInfo'])){
                         $msg = "'".$arrayJson['extendedTextMessage']['contextInfo']['conversation']."'". "\n".$arrayJson['extendedTextMessage']['text'];
                     }
-
+//verificar metodos;
                     $this->Webhook->message($server->url,$server->api_geral,$code->api_key,$msg,$enviarPara,$enviadoDe);
                 }*/
 
